@@ -6,7 +6,6 @@ from sqlalchemy.pool import StaticPool
 from app.db import Base, get_db
 from app.api.documents import get_storage_dir
 from app.main import app
-import app.models
 
 @pytest.fixture
 def client(tmp_path):
