@@ -1,9 +1,8 @@
 # Roadmap
 - [ ] M1 — validated text-PDF upload, extraction, persistence and browser UI
-  - [x] Write database models, migration and backend endpoints
-  - [ ] Run migrations against PostgreSQL
-  - [ ] Connect React upload/library/page viewer
-  - [ ] Verify full persistence end-to-end
+  - [x] Write SQLAlchemy models, Alembic migration and backend endpoints
+  - [x] Build React upload/library/page viewer
+  - [ ] Run migrations against PostgreSQL and verify UI end-to-end
 - [ ] M2 — TF-IDF classifier and reproducible evaluation
 - [ ] M3 — Semantic search with embeddings and pgvector
 - [ ] M4 — RAG Q&A with grounded citations
