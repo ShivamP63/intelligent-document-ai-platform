@@ -1,0 +1,13 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - "127.0.0.1:5434:5432"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-docai_local}
+      POSTGRES_USER: ${POSTGRES_USER:-docai_dev}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me_local_only}
+    volumes:
+      - docai_pg_data:/var/lib/postgresql/data
+volumes:
+  docai_pg_data:
