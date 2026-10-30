@@ -16,6 +16,43 @@ jobs:
         working-directory: backend
       - run: pytest -q
         working-directory: backend
+  postgres-migration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: docai_local
+          POSTGRES_USER: docai_dev
+          POSTGRES_PASSWORD: change_me_local_only
+        ports:
+          - 5434:5432
+        options: >-
+          --health-cmd "pg_isready -U docai_dev -d docai_local"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql+psycopg://docai_dev:change_me_local_only@localhost:5434/docai_local
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -e '.[dev]'
+        working-directory: backend
+      - name: Apply Alembic migration and inspect tables
+        working-directory: backend
+        run: |
+          alembic upgrade head
+          python - <<'PY'
+          import os
+          from sqlalchemy import create_engine, inspect
+          engine = create_engine(os.environ['DATABASE_URL'])
+          tables = set(inspect(engine).get_table_names())
+          assert {'documents', 'document_pages', 'alembic_version'} <= tables, tables
+          print('PostgreSQL migration passed')
+          PY
   frontend-build:
     runs-on: ubuntu-latest
     steps:
