@@ -43,3 +43,9 @@ GitHub Actions includes a Playwright browser test using a generated, non-sensiti
 7. Upload a non-sensitive text PDF. Verify its metadata and extracted text remain visible after refreshing. **This exact workflow passed the automated browser test in CI; manual walkthrough is optional.**
 
 **Local development only:** The initial upload flow supports text-based PDFs up to 10 MB and 50 pages; scanned/image-only PDFs are rejected. Do not upload sensitive documents or expose the unauthenticated API publicly. Compose credentials are local-development defaults.
+
+## Hosted browser-only portfolio preview
+
+The Vercel frontend is intentionally a **browser-only interactive preview**, not a cloud deployment of the FastAPI/PostgreSQL backend. It uses pdf.js to extract selectable PDF text entirely in the visitor's browser and localStorage to remember extracted text in that browser. It never uploads files to a server. Only use non-sensitive sample PDFs; browser storage can be cleared or reach its quota.
+
+The full Python/FastAPI, PostgreSQL, Alembic, pypdf and React application runs through Docker Compose and has passed PDF upload and persistence browser tests in GitHub Actions. The public preview uses `VITE_DEMO_MODE=true`; localhost still calls the real API by default.

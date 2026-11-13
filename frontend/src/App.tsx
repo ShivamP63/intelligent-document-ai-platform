@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { API_BASE_URL } from "./api/client";
+import { isHostedDemo, getDemoDocuments, getDemoPages, uploadDemoDocument } from "./api/demo";
 
 type Document = { id: string; original_filename: string; size_bytes: number; page_count: number; created_at: string; status: string };
 type DocumentPage = { page_number: number; extracted_text: string };
@@ -29,7 +30,7 @@ export default function App() {
 
   async function loadDocuments() {
     try {
-      const items = await json<Document[]>("/api/documents");
+      const items = isHostedDemo ? getDemoDocuments() : await json<Document[]>("/api/documents");
       setDocuments(items);
       setSelectedId(current => items.some(d => d.id === current) ? current : (items[0]?.id ?? ""));
     } catch (err) { setMessage(String(err)); }
@@ -38,7 +39,7 @@ export default function App() {
   useEffect(() => {
     if (!selectedId) { setPages([]); return; }
     let cancelled = false;
-    void json<DocumentPage[]>(`/api/documents/${selectedId}/pages`)
+    void (isHostedDemo ? Promise.resolve(getDemoPages(selectedId)) : json<DocumentPage[]>(`/api/documents/${selectedId}/pages`))
       .then(items => { if (!cancelled) setPages(items); })
       .catch(err => { if (!cancelled) setMessage(String(err)); });
     return () => { cancelled = true; };
@@ -52,7 +53,7 @@ export default function App() {
     setUploading(true);
     setMessage("");
     try {
-      const result = await json<Document>("/api/documents", { method: "POST", body: form });
+      const result = isHostedDemo ? await uploadDemoDocument(file) : await json<Document>("/api/documents", { method: "POST", body: form });
       setMessage(`Uploaded ${result.original_filename} — extracted ${result.page_count} pages`);
       setFile(null);
       const input = document.getElementById("pdf-file") as HTMLInputElement | null;
@@ -73,6 +74,7 @@ export default function App() {
         <div className="upload-controls"><input id="pdf-file" type="file" accept=".pdf,application/pdf" required onChange={e => setFile(e.target.files?.[0] ?? null)} /><button disabled={!file || uploading} type="submit">{uploading ? "Extracting…" : "Upload & extract"}</button></div>
       </form>
     </section>
+    {isHostedDemo && <div className="notice"><strong>Interactive browser-only demo.</strong> PDF extraction and saved text stay in this browser; nothing is uploaded to a server. The real Python/FastAPI + PostgreSQL app is implemented and tested in the GitHub repository.</div>}
     {message && <div role="status" className="notice">{message}</div>}
     <div className="columns">
       <section className="card"><h2>Library</h2>
@@ -84,6 +86,6 @@ export default function App() {
         {selected && <><p className="selected-title">{selected.original_filename}</p>{pages.map(page => <article className="page" key={page.page_number}><h3>Page {page.page_number}</h3><pre>{page.extracted_text || "(No selectable text on this page)"}</pre></article>)}</>}
       </section>
     </div>
-    <footer>Local prototype only · Classification, vector search, and RAG are planned for later milestones.</footer>
+    <footer>{isHostedDemo ? "Public preview: browser-only processing and storage · No server uploads" : "Local prototype only · Classification, vector search, and RAG are planned for later milestones."}</footer>
   </main>;
 }
