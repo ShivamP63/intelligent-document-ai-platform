@@ -1,0 +1,34 @@
+name: Deploy backend to AWS
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - 'deploy/**'
+      - '.github/workflows/deploy-aws.yml'
+permissions:
+  id-token: write
+  contents: read
+env:
+  AWS_REGION: us-east-2
+  AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
+  AWS_DEPLOY_ROLE_ARN: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      - uses: aws-actions/amazon-ecr-login@v2
+      - uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          push: true
+          tags: ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/portfolio/document-api:${{ github.sha }}
+      - name: Restart backend through SSM
+        run: |
+          aws ssm send-command             --targets Key=tag:Name,Values=portfolio-shared-host             --document-name AWS-RunShellScript             --parameters commands="[/opt/portfolio/deploy.sh workflow ${{ github.sha }}]"             --comment "Deploy workflow API ${{ github.sha }}"
