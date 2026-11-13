@@ -6,3 +6,4 @@
 2026-11-13 — v0.1.0 local-first milestone ready; no public upload service, authentication, classifier, semantic retrieval or RAG yet.
 
 Next: TF-IDF/scikit-learn document classification with a reproducible labeled dataset and holdout evaluation; cloud storage and auth required before public upload deployment.
+2026-11-13 — Public browser-only PDF extraction demo deployed to Vercel: https://intelligent-document-ai-demo.vercel.app . Demo processes PDFs in the visitor's browser and stores text locally; FastAPI/PostgreSQL remain local + CI-tested, not cloud-hosted. GitHub Login Connection on Vercel not set; live frontend was deployed manually from GitHub source (no automatic redeploy).
