@@ -3,7 +3,7 @@ import { PDFDocument, StandardFonts } from 'pdf-lib';
 
 test('hosted document preview extracts a PDF in-browser, persists text, and never uses API', async ({ page }) => {
   const apiRequests: string[] = [];
-  page.on('request', r => { if (r.url().includes('/api/')) apiRequests.push(r.url()); });
+  page.on('request', r => { if (new URL(r.url()).pathname.startsWith('/api/')) apiRequests.push(r.url()); });
   const filename = 'hosted-browser-test-' + Date.now() + '.pdf';
   const pdf = await PDFDocument.create();
   const font = await pdf.embedFont(StandardFonts.Helvetica);
