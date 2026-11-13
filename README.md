@@ -20,7 +20,19 @@ The initial workflow is a document library that accepts text-based PDFs, extract
 
 **ML classification, semantic search, and RAG have not been implemented yet.** See [roadmap](docs/roadmap.md), [architecture](docs/architecture.md), and [API design](docs/api-design.md).
 
-## Local development
+## One-command Docker demo (local)
+
+With Docker Desktop running, execute at the repository root:
+
+```bash
+docker compose up -d --build
+```
+
+Open **http://localhost:5174** (React UI) and **http://localhost:8000/docs** (FastAPI API docs). Upload a non-sensitive text PDF, view its extracted pages, and refresh to verify PostgreSQL-backed persistence. Stop with `docker compose down`; Docker volumes retain the database and uploaded files unless explicitly removed.
+
+GitHub Actions includes a Playwright browser test using a generated, non-sensitive PDF to verify upload and extraction across the Dockerized UI, FastAPI backend, and PostgreSQL. **This version is local-only**; the unauthenticated document upload API must not be made public or used for sensitive material.
+
+## Manual local development
 
 1. Install Python 3.11+, Node.js and Docker Desktop.
 2. Start PostgreSQL from the repository root: `docker compose up -d postgres` (local port 5434).
