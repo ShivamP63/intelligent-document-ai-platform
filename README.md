@@ -1,5 +1,13 @@
 # Intelligent Document Processing & AI Search Platform
 
+## Live browser-only preview
+
+**[Intelligent Document public demo](https://intelligent-document-ai-demo.vercel.app)** — hosted on Vercel (deployed 2026-11-13).
+
+The public demo extracts text from text-based PDFs in the visitor's browser with pdf.js and stores extracted text in localStorage. It does not upload PDFs to FastAPI or use a cloud PostgreSQL database. The full-stack Docker Compose application is separately tested through GitHub Actions.
+
+**Important:** GitHub is the source of truth, but this Vercel project was deployed from the checked-in frontend source directly because the Vercel team's GitHub Login Connection has not been enabled. New GitHub commits do **not** automatically update the live Vercel site until that connection is configured or another explicit deployment is made.
+
 **v0.1.0 local-first milestone verified in CI — automated browser-to-PostgreSQL test passed on 2026-11-13.**
 
 A full-stack application for uploading and organizing documents, extracting text, and—through later milestones—adding evaluated ML classification, semantic search, and source-grounded AI answers.
