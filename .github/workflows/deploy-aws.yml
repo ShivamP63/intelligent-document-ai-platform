@@ -31,4 +31,8 @@ jobs:
           tags: ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/portfolio/document-api:${{ github.sha }}
       - name: Restart backend through SSM
         run: |
-          aws ssm send-command             --targets Key=tag:Name,Values=portfolio-shared-host             --document-name AWS-RunShellScript             --parameters commands="[/opt/portfolio/deploy.sh workflow ${{ github.sha }}]"             --comment "Deploy workflow API ${{ github.sha }}"
+          aws ssm send-command \
+            --targets Key=tag:Name,Values=portfolio-shared-host \
+            --document-name AWS-RunShellScript \
+            --parameters commands="[/opt/portfolio/deploy.sh documents ${{ github.sha }}]" \
+            --comment "Deploy document API ${{ github.sha }}"
