@@ -64,3 +64,37 @@ jobs:
         working-directory: frontend
       - run: npm run build
         working-directory: frontend
+
+  docker-browser-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Build and start the complete local stack
+        run: docker compose up -d --build
+      - name: Wait for API and browser UI
+        run: |
+          for attempt in $(seq 1 90); do
+            if curl -fsS http://localhost:8000/api/health && curl -fsS http://localhost:5174/ >/dev/null; then
+              exit 0
+            fi
+            sleep 3
+          done
+          docker compose logs
+          exit 1
+      - name: Install browser test dependencies
+        working-directory: frontend
+        run: |
+          npm install --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Run end-to-end browser test
+        working-directory: frontend
+        run: npm run test:e2e
+      - name: Collect logs if a step failed
+        if: failure()
+        run: docker compose logs
+      - name: Stop stack
+        if: always()
+        run: docker compose down

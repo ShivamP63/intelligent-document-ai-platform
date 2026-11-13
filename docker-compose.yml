@@ -1,13 +1,37 @@
+# Local-only document demo. Do not make an unauthenticated file-upload service public.
 services:
   postgres:
     image: postgres:16-alpine
-    ports:
-      - "127.0.0.1:5434:5432"
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-docai_local}
       POSTGRES_USER: ${POSTGRES_USER:-docai_dev}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me_local_only}
+    ports:
+      - "127.0.0.1:5434:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
     volumes:
       - docai_pg_data:/var/lib/postgresql/data
+  api:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-docai_dev}:${POSTGRES_PASSWORD:-change_me_local_only}@postgres:5432/${POSTGRES_DB:-docai_local}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - docai_uploads:/storage/uploads
+  frontend:
+    build: ./frontend
+    depends_on:
+      - api
+    ports:
+      - "127.0.0.1:5174:80"
 volumes:
   docai_pg_data:
+  docai_uploads:
