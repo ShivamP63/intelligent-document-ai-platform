@@ -6,7 +6,10 @@ type Document = { id: string; original_filename: string; size_bytes: number; pag
 type DocumentPage = { page_number: number; extracted_text: string };
 
 async function json<T>(path: string, options?: RequestInit): Promise<T> {
-  const response = await fetch(API_BASE_URL + path, options);
+  const headers = new Headers(options?.headers);
+  const token = localStorage.getItem('docai_token');
+  if (token) headers.set('Authorization', `Bearer ${token}`);
+  const response = await fetch(API_BASE_URL + path, { ...options, headers });
   if (!response.ok) {
     const body = await response.text();
     try {
@@ -27,6 +30,18 @@ export default function App() {
   const [file, setFile] = useState<File | null>(null);
   const [message, setMessage] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [token, setToken] = useState(() => localStorage.getItem('docai_token') ?? '');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [register, setRegister] = useState(false);
+
+  async function authenticate(event: FormEvent) {
+    event.preventDefault();
+    try {
+      const result = await json<{ access_token: string }>(`/api/auth/${register ? 'register' : 'login'}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
+      localStorage.setItem('docai_token', result.access_token); setToken(result.access_token); setMessage('Signed in');
+    } catch (err) { setMessage(String(err)); }
+  }
 
   async function loadDocuments() {
     try {
@@ -35,7 +50,7 @@ export default function App() {
       setSelectedId(current => items.some(d => d.id === current) ? current : (items[0]?.id ?? ""));
     } catch (err) { setMessage(String(err)); }
   }
-  useEffect(() => { void loadDocuments(); }, []);
+  useEffect(() => { if (isHostedDemo || token) void loadDocuments(); }, [token]);
   useEffect(() => {
     if (!selectedId) { setPages([]); return; }
     let cancelled = false;
@@ -64,6 +79,8 @@ export default function App() {
     finally { setUploading(false); }
   }
   const selected = documents.find(d => d.id === selectedId);
+
+  if (!isHostedDemo && !token) return <main className="container"><header><h1>Intelligent Document Platform</h1><p>Sign in to use the AWS-backed API.</p></header><section className="card upload"><h2>{register ? 'Create account' : 'Sign in'}</h2><form onSubmit={authenticate}><input type="email" required placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} /><input type="password" required minLength={8} placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} /><button type="submit">{register ? 'Register' : 'Login'}</button></form><button onClick={() => setRegister(v => !v)}>{register ? 'Use existing account' : 'Create an account'}</button>{message && <div role="status" className="notice">{message}</div>}</section></main>;
 
   return <main className="container">
     <header><p className="eyebrow">PORTFOLIO · SPRINT 1</p><h1>Intelligent Document Platform</h1><p>Upload text PDFs, browse your library, and inspect page-level extracted text.</p></header>
