@@ -1,13 +1,10 @@
-# Local-only document demo. Do not make an unauthenticated file-upload service public.
 services:
   postgres:
     image: postgres:16-alpine
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-docai_local}
       POSTGRES_USER: ${POSTGRES_USER:-docai_dev}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me_local_only}
-    ports:
-      - "127.0.0.1:5434:5432"
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 5s
@@ -18,20 +15,16 @@ services:
   api:
     build: ./backend
     environment:
-      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-docai_dev}:${POSTGRES_PASSWORD:-change_me_local_only}@postgres:5432/${POSTGRES_DB:-docai_local}
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-docai_dev}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-docai_local}
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-https://intelligent-document-ai-demo.vercel.app}
     depends_on:
       postgres:
         condition: service_healthy
     ports:
-      - "127.0.0.1:8000:8000"
+      - "80:8000"
     volumes:
       - docai_uploads:/storage/uploads
-  frontend:
-    build: ./frontend
-    depends_on:
-      - api
-    ports:
-      - "127.0.0.1:5174:80"
 volumes:
   docai_pg_data:
   docai_uploads:

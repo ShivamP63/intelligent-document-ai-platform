@@ -12,6 +12,7 @@ class Document(Base):
     __tablename__ = "documents"
 
     id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    owner_id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     original_filename: Mapped[str] = mapped_column(String(255), nullable=False)
     stored_filename: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
     content_type: Mapped[str] = mapped_column(String(100), nullable=False)
@@ -23,6 +24,7 @@ class Document(Base):
     pages: Mapped[list[DocumentPage]] = relationship(
         back_populates="document", cascade="all, delete-orphan", order_by="DocumentPage.page_number"
     )
+    owner = relationship("User", back_populates="documents")
 
 class DocumentPage(Base):
     __tablename__ = "document_pages"
