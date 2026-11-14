@@ -5,7 +5,7 @@
  */
 export const isHostedDemo =
   import.meta.env.VITE_DEMO_MODE === 'true' ||
-  (typeof window !== 'undefined' && window.location.hostname.endsWith('.vercel.app'));
+  !import.meta.env.VITE_API_BASE_URL;
 
 export type DemoDocument = {
   id: string; original_filename: string; size_bytes: number;
