@@ -1,11 +1,10 @@
 /**
- * Public portfolio preview only: PDF extraction happens fully in the visitor's browser.
- * No PDFs, document text, or metadata are uploaded to the server.
- * This is separate from the real FastAPI/PostgreSQL app verified by GitHub Actions.
+ * Hosted demo is used only when no backend URL is configured.
+ * An explicit API URL always selects the real backend.
  */
 export const isHostedDemo =
-  import.meta.env.VITE_DEMO_MODE === 'true' ||
-  !import.meta.env.VITE_API_BASE_URL;
+  !import.meta.env.VITE_API_BASE_URL &&
+  import.meta.env.VITE_DEMO_MODE === 'true';
 
 export type DemoDocument = {
   id: string; original_filename: string; size_bytes: number;
