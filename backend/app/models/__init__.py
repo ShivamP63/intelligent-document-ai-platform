@@ -1,2 +1,3 @@
 from app.models.document import Document, DocumentPage
-__all__ = ["Document", "DocumentPage"]
+from app.models.user import User
+__all__ = ["Document", "DocumentPage", "User"]
