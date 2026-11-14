@@ -8,6 +8,8 @@ from app.db import get_db
 from app.models import Document, DocumentPage
 from app.schemas import DocumentOut, DocumentPageOut
 from app.processing.pdf import extract_pages
+from app.api.auth import current_user
+from app.models import User
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 MAX_FILE_BYTES = 10 * 1024 * 1024
@@ -21,6 +23,7 @@ def upload_document(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
     storage_dir: Path = Depends(get_storage_dir),
+    user: User = Depends(current_user),
 ):
     filename = Path((file.filename or "").replace("\\", "/")).name
     if not filename or len(filename) > 255 or not filename.lower().endswith(".pdf"):
@@ -41,6 +44,7 @@ def upload_document(
     try:
         document = Document(
             original_filename=filename, stored_filename=stored_filename,
+            owner_id=user.id,
             content_type="application/pdf", size_bytes=len(data),
             page_count=len(pages), status="PROCESSED",
         )
@@ -57,19 +61,19 @@ def upload_document(
         raise HTTPException(status_code=500, detail="Failed to save document")
 
 @router.get("", response_model=list[DocumentOut])
-def list_documents(db: Session = Depends(get_db)):
-    return db.scalars(select(Document).order_by(Document.created_at.desc()).limit(50)).all()
+def list_documents(db: Session = Depends(get_db), user: User = Depends(current_user)):
+    return db.scalars(select(Document).where(Document.owner_id == user.id).order_by(Document.created_at.desc()).limit(50)).all()
 
 @router.get("/{document_id}", response_model=DocumentOut)
-def get_document(document_id: UUID, db: Session = Depends(get_db)):
-    doc = db.get(Document, document_id)
+def get_document(document_id: UUID, db: Session = Depends(get_db), user: User = Depends(current_user)):
+    doc = db.scalar(select(Document).where(Document.id == document_id, Document.owner_id == user.id))
     if doc is None:
         raise HTTPException(status_code=404, detail="Document not found")
     return doc
 
 @router.get("/{document_id}/pages", response_model=list[DocumentPageOut])
-def get_pages(document_id: UUID, db: Session = Depends(get_db)):
-    doc = db.get(Document, document_id)
+def get_pages(document_id: UUID, db: Session = Depends(get_db), user: User = Depends(current_user)):
+    doc = db.scalar(select(Document).where(Document.id == document_id, Document.owner_id == user.id))
     if doc is None:
         raise HTTPException(status_code=404, detail="Document not found")
     return db.scalars(
