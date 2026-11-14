@@ -22,7 +22,7 @@ services:
       postgres:
         condition: service_healthy
     ports:
-      - "8000:8000"
+      - "80:8000"
     volumes:
       - docai_uploads:/storage/uploads
 volumes:
