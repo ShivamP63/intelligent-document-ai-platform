@@ -16,7 +16,7 @@ const key = 'portfolio-document-browser-demo-v1';
 const sample: State = {
   documents: [{
     id: 'sample-document',
-    original_filename: 'Welcome - example content (sample)',
+    original_filename: 'Getting started (sample)',
     size_bytes: 190,
     page_count: 1,
     created_at: '2026-11-13T00:00:00Z',
@@ -25,7 +25,7 @@ const sample: State = {
   pages: {
     'sample-document': [{
       page_number: 1,
-      extracted_text: 'This is sample content in a browser-only portfolio preview.\nUpload a non-sensitive, text-based PDF to see its extracted pages.\nNo files or extracted text leave this browser.',
+      extracted_text: 'Getting started\nChoose a PDF with selectable text, then select Upload & extract.\nOpen a document in your library to read its pages.',
     }],
   },
 };

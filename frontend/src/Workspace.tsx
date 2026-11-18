@@ -119,7 +119,7 @@ export default function Workspace({ onSignOut }: { onSignOut: (reason?: string) 
       {feedback && <div className={`feedback ${feedback.error ? 'error' : 'success'}`} role={feedback.error ? 'alert' : 'status'}>{feedback.text}</div>}
       <div className="workspace-grid">
         <section className="library-panel" aria-labelledby="library-title">
-          <div className="panel-head"><h2 id="library-title">Library</h2>{!loading && <span className="count" aria-label={`${documents.length} documents`}>{documents.length}</span>}</div>
+          <div className="panel-head"><h2 id="library-title">Library</h2>{!loading && <span className="count" aria-label={`${documents.length} ${documents.length === 1 ? 'document' : 'documents'}`}>{documents.length}</span>}</div>
           {loading && documents.length === 0 && <p className="panel-note">Loading documents…</p>}
           {!loading && documents.length === 0 && <p className="panel-note">Your uploaded PDFs will appear here.</p>}
           <ul className="doc-list">{documents.map(doc => <li key={doc.id}>
