@@ -12,7 +12,7 @@ test('hosted document preview extracts a PDF in-browser, persists text, and neve
   });
   const buffer = Buffer.from(await pdf.save());
   await page.goto('/');
-  await expect(page.getByText(/Interactive browser-only demo/)).toBeVisible();
+  await expect(page.getByText(/Browser-only workspace/)).toBeVisible();
   await page.locator('#pdf-file').setInputFiles({ name: filename, mimeType: 'application/pdf', buffer });
   await page.getByRole('button', { name: 'Upload & extract' }).click();
   await expect(page.getByRole('status')).toContainText('Uploaded ' + filename);

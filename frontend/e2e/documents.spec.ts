@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { PDFDocument, StandardFonts } from 'pdf-lib';
 
-test('PDF upload, page extraction, and refresh work in the browser', async ({ page }) => {
+test('an account can upload, reopen, and read its PDF after signing in again', async ({ page }) => {
   const filename = 'browser-smoke-' + Date.now() + '.pdf';
   const pdf = await PDFDocument.create();
   const font = await pdf.embedFont(StandardFonts.Helvetica);
@@ -11,7 +11,14 @@ test('PDF upload, page extraction, and refresh work in the browser', async ({ pa
   });
   const buffer = Buffer.from(await pdf.save());
 
+  const email = `reader-${Date.now()}@example.com`;
+  const password = 'Local-test-password-42';
   await page.goto('/');
+  await page.getByRole('button', { name: 'Create an account' }).click();
+  await page.getByLabel('Email address').fill(email);
+  await page.getByLabel('Password', { exact: true }).fill(password);
+  await page.getByRole('button', { name: 'Create account', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Document workspace' })).toBeVisible();
   await page.locator('#pdf-file').setInputFiles({
     name: filename,
     mimeType: 'application/pdf',
@@ -21,6 +28,11 @@ test('PDF upload, page extraction, and refresh work in the browser', async ({ pa
   await expect(page.getByRole('status')).toContainText('Uploaded ' + filename);
   await expect(page.locator('.page pre')).toContainText('Portfolio browser smoke');
 
+  await page.getByRole('button', { name: 'Sign out' }).click();
+  await page.getByLabel('Email address').fill(email);
+  await page.getByLabel('Password', { exact: true }).fill(password);
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+  await expect(page.locator('.page pre')).toContainText('Portfolio browser smoke');
   await page.reload();
   await expect(page.getByRole('button', { name: new RegExp(filename) })).toBeVisible();
   await expect(page.locator('.page pre')).toContainText('Portfolio browser smoke');
