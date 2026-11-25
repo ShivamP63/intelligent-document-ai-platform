@@ -1,0 +1,55 @@
+name: Deploy Java workflow backend to AWS
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/deploy-java-through-shared-aws.yml'
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: us-east-2
+  AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
+  AWS_DEPLOY_ROLE_ARN: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out deployment repository
+        uses: actions/checkout@v4
+
+      - name: Check out Java workflow backend
+        uses: actions/checkout@v4
+        with:
+          repository: ShivamP63/enterprise-workflow-platform
+          ref: main
+          path: java-source
+
+      - name: Configure AWS credentials through existing OIDC role
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Log in to existing private ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and publish Java backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./java-source/backend
+          push: true
+          tags: ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/portfolio/workflow-api:${{ github.sha }}
+
+      - name: Restart Java backend through existing SSM host deployment
+        run: |
+          aws ssm send-command \
+            --targets Key=tag:Name,Values=portfolio-shared-host \
+            --document-name AWS-RunShellScript \
+            --parameters commands="[/opt/portfolio/deploy.sh workflow ${{ github.sha }}]" \
+            --comment "Deploy workflow API from Java project"
