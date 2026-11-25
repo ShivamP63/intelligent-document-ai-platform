@@ -2,31 +2,43 @@
 
 A Python-first full-stack application for uploading, extracting, storing, and reviewing text-based PDF documents through a React interface and FastAPI backend.
 
-[Live Demo](https://intelligent-document-ai-demo.vercel.app/) · [GitHub repository](https://github.com/ShivamP63/intelligent-document-ai-platform)
+[Live application](https://intelligent-document-ai-demo.vercel.app/) · [GitHub repository](https://github.com/ShivamP63/intelligent-document-ai-platform)
 
-## What the project demonstrates
+## Current live deployment
 
-This project shows how I build a complete application across the frontend, backend, database, document-processing, testing, and delivery layers.
+The application is deployed as a split frontend and backend system.
 
-- PDF upload and document-library workflows
-- Text extraction with pypdf in the API-backed application flow
-- React and TypeScript interface for browsing document metadata and extracted content
-- FastAPI REST endpoints with interactive OpenAPI documentation
-- PostgreSQL persistence using SQLAlchemy models and Alembic migrations
-- Docker Compose environment for the UI, API, and database
-- Automated browser-to-database validation in GitHub Actions
-- Browser-based hosted preview for reviewing the document experience
+- **Frontend:** React and TypeScript hosted on Vercel
+- **Backend:** FastAPI running on an AWS-hosted Docker service
+- **Database:** PostgreSQL used by the FastAPI service
+- **Authentication:** Account registration and login with JWT bearer tokens
+- **Document workflow:** Authenticated PDF upload, text extraction, metadata persistence, and page-by-page reading
 
-The hosted demo is designed as a lightweight browser preview. The repository also includes the full Dockerized FastAPI and PostgreSQL workflow for local execution and automated testing.
+The frontend uses same-origin requests such as `/api/auth/login` and `/api/documents`. Vercel rewrites those requests to the AWS API. The live health endpoint is available at [`/api/health`](https://intelligent-document-ai-demo.vercel.app/api/health).
+
+The AWS backend deployment workflow builds the backend image, pushes it to a private Amazon ECR repository, and restarts the service on the shared EC2 host through AWS Systems Manager. GitHub Actions authenticates to AWS with OIDC rather than long-lived access keys.
+
+## User workflow
+
+1. Register an account or sign in.
+2. Select a text-based PDF up to 10 MB and 50 pages.
+3. Upload the document through the authenticated FastAPI endpoint.
+4. Extract text from each page with `pypdf`.
+5. Store document metadata and extracted pages in PostgreSQL.
+6. Open the document library and read extracted content page by page.
+
+Documents are scoped to the authenticated user. A user can only list, open, or read pages for documents they own.
 
 ## Architecture
 
 ~~~mermaid
 flowchart LR
-    UI[React and TypeScript UI] --> API[Python and FastAPI]
+    UI[React and TypeScript on Vercel] --> RW[Vercel API rewrite]
+    RW --> API[FastAPI on AWS]
     API --> PDF[pypdf extraction]
     API --> DB[(PostgreSQL)]
-    CI[GitHub Actions] --> TEST[pytest and Playwright]
+    CI[GitHub Actions] --> ECR[Private Amazon ECR]
+    ECR --> API
 ~~~
 
 ## Technology stack
@@ -34,25 +46,37 @@ flowchart LR
 | Layer | Technologies |
 |---|---|
 | Backend | Python, FastAPI, Pydantic, Uvicorn |
+| Authentication | JWT, pwdlib password hashing |
 | Data access | SQLAlchemy, Alembic |
 | Database | PostgreSQL |
-| Document processing | pypdf, browser-side pdf.js preview |
+| Document processing | pypdf |
 | Frontend | React, TypeScript, HTML, CSS |
 | Testing | pytest, Playwright |
-| Delivery | Docker Compose, GitHub Actions, Vercel preview |
+| Local delivery | Docker Compose |
+| Cloud delivery | AWS EC2, Amazon ECR, AWS Systems Manager, GitHub Actions OIDC |
+| Frontend hosting | Vercel |
 
 ## Run the full-stack application locally
 
-Install Docker Desktop, then run the application from the repository root:
+Create local environment values before starting the services.
+
+~~~bash
+cp .env.example .env
+~~~
+
+Set at least `POSTGRES_PASSWORD` and `JWT_SECRET` in `.env`. Use a development-only JWT secret with at least 32 random characters.
+
+Start the application from the repository root.
 
 ~~~bash
 docker compose up -d --build
 ~~~
 
-Open the following URLs:
+Open these URLs:
 
 - React application: http://localhost:5174
 - FastAPI documentation: http://localhost:8000/docs
+- FastAPI health endpoint: http://localhost:8000/api/health
 
 Upload a non-sensitive text PDF, review the extracted content, and refresh the application to verify PostgreSQL-backed persistence.
 
@@ -62,7 +86,7 @@ Stop the services with:
 docker compose down
 ~~~
 
-The named database volume remains available unless it is explicitly removed.
+The named database and upload volumes remain available unless they are explicitly removed.
 
 ## Backend development
 
@@ -88,19 +112,32 @@ npm install
 npm run dev
 ~~~
 
-The development interface is available at http://localhost:5174.
+The local development interface is available at http://localhost:5174.
 
 ## Continuous integration
 
-The GitHub Actions workflow exercises the browser-to-database path with a generated, non-sensitive PDF. It validates the Dockerized React interface, FastAPI service, PostgreSQL persistence, and document extraction workflow.
+The GitHub Actions workflow validates the application with generated, non-sensitive PDF content. It checks:
 
-The automated checks cover:
-
-- API and validation behavior
+- API validation and authentication behavior
 - PDF upload and text extraction
-- document metadata persistence
-- browser interaction through the React interface
-- end-to-end database verification
+- Document metadata and page persistence
+- Browser interaction through the React interface
+- End-to-end database behavior
+- Frontend production build
+
+## AWS deployment
+
+The deployment workflow is [`.github/workflows/deploy-aws.yml`](.github/workflows/deploy-aws.yml).
+
+It expects the shared AWS foundation to be provisioned and requires:
+
+- Repository variable `AWS_ACCOUNT_ID`
+- Repository secret `AWS_DEPLOY_ROLE_ARN`
+- An AWS ECR repository for the document API
+- An EC2 host registered for AWS Systems Manager
+- The host deployment script used by the workflow
+
+The backend reads its runtime configuration from environment variables. Keep database credentials and `JWT_SECRET` outside the repository.
 
 ## Repository structure
 
@@ -108,19 +145,21 @@ The automated checks cover:
 intelligent-document-ai-platform/
 ├── backend/                    # FastAPI application, models, migrations, and tests
 ├── frontend/                   # React and TypeScript interface
+├── deploy/                     # AWS deployment notes
+├── infra/terraform/            # Infrastructure location reserved for cloud definitions
 ├── docs/                       # Architecture and API design notes
 ├── docker-compose.yml          # Local full-stack environment
-├── Dockerfile                  # Container build configuration
-└── README.md
+└── .github/workflows/          # CI and AWS deployment workflows
 ~~~
 
 ## Engineering notes
 
-- The API-backed workflow is intended for local development and testing through Docker Compose.
+- The supported document workflow currently handles PDFs with selectable text.
+- Scanned or image-only PDFs are outside the current extraction workflow.
 - Use non-sensitive sample PDFs during demonstrations.
-- Scanned or image-only PDFs are outside the text-extraction workflow.
-- Environment-specific values belong in local configuration and should not be committed.
+- Uploaded documents and extracted pages are protected by authenticated, per-user access checks.
+- Environment-specific values belong in local or cloud configuration and must not be committed.
 
 ## Status
 
-The project has a live browser demo and a verified Dockerized full-stack workflow. The repository is organized to make the Python backend, React frontend, relational data model, document-processing path, and automated validation easy to review.
+The project has a live Vercel frontend connected to an AWS-hosted FastAPI backend. The deployed workflow supports account authentication, user-scoped document libraries, PDF upload, text extraction, PostgreSQL persistence, and page-by-page reading. Further work can extend the platform with background processing, OCR, semantic search, classification, and retrieval-augmented question answering.
